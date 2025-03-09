@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relationship Mediator</title>
+    <style>
+        :root {
+            --primary: #ff4081;
+            --secondary: #3f51b5;
+            --light: #f5f5f5;
+            --dark: #333;
+            --success: #4CAF50;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--dark);
+            transition: background 0.5s ease;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        h1 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 2rem;
+        }
+        
+        p {
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+        
+        .question-container {
+            margin: 2rem 0;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .question {
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        
+        .question.active {
+            opacity: 1;
+            transform: translateY(0);
+            animation: fadeInUp 0.8s ease forwards;
+        }
+        
+        .question.fade-out {
+            animation: fadeOut 0.5s ease forwards;
+        }
+        
+        .answer-options {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            background: none;
+            border: 2px solid;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-yes {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        
+        .btn-yes:hover {
+            background-color: var(--success);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-no {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-no:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-start {
+            border-color: var(--secondary);
+            color: var(--secondary);
+            margin-top: 1rem;
+            padding: 1rem 2.5rem;
+        }
+        
+        .btn-start:hover {
+            background-color: var(--secondary);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(63, 81, 181, 0.3);
+        }
+        
+        .result {
+            font-size: 1.3rem;
+            margin: 2rem 0;
+            padding: 1rem;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+            animation: fadeIn 0.8s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            display: none;
+        }
+        
+        .result.positive {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-left: 4px solid var(--success);
+        }
+        
+        .result.override {
+            background-color: rgba(255, 64, 129, 0.1);
+            border-left: 4px solid var(--primary);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--primary);
+            border-radius: 0;
+            opacity: 0;
+            animation: confetti 5s ease-in-out forwards;
+            transform: rotate(45deg);
+        }
+        
+        @keyframes confetti {
+            0% {
+                transform: translateY(0) rotate(45deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(800px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-20px);
+            }
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+        
+        .bounce {
+            animation: bounce 1s;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        @keyframes moveAround {
+            0% { transform: translate(0, 0); }
+            25% { transform: translate(80px, -20px); }
+            50% { transform: translate(100px, 30px); }
+            75% { transform: translate(-50px, 20px); }
+            100% { transform: translate(0, 0); }
+        }
+        
+        .moving-button {
+            animation: moveAround 1.5s linear;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .emoji {
+            font-size: 2.5rem;
+            margin: 1rem 0;
+            display: inline-block;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .hearts {
+            position: absolute;
+            top: -100px;
+            width: 100%;
+            height: 100px;
+            display: flex;
+            justify-content: space-around;
+            z-index: 10;
+        }
+        
+        .heart {
+            animation: fall 3s linear forwards;
+            opacity: 0;
+            position: relative;
+            font-size: 1.8rem;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(500px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .progress-container {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            margin: 1rem 0;
+            height: 8px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary) 0%, var(--primary) 100%);
+            border-radius: 20px;
+            transition: width 0.8s ease;
+            width: 0%;
+        }
+
+        .hosting-guide {
+            margin-top: 2rem;
+            padding: 1rem;
+            background-color: var(--light);
+            border-radius: 10px;
+            text-align: left;
+            display: none;
+        }
+
+        .hosting-guide h3 {
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .hosting-guide ol {
+            padding-left: 1.5rem;
+        }
+
+        .hosting-guide li {
+            margin-bottom: 0.5rem;
+        }
+
+        .show-guide-btn {
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            color: var(--secondary);
+            background: none;
+            border: none;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        
+        .reaction {
+            position: absolute;
+            top: 20%;
+            left: 0;
+            width: 100%;
+            font-size: 6rem;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .reaction.show {
+            animation: showReaction 1.5s ease-out forwards;
+        }
+        
+        @keyframes showReaction {
+            0% { opacity: 0; transform: scale(0.5); }
+            30% { opacity: 1; transform: scale(1.2); }
+            70% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(1.5); }
+        }
+        
+        .sparkle {
+            position: absolute;
+            background-color: white;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        @keyframes sparkle {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        
+        .timer-container {
+            width: 60px;
+            height: 60px;
+            position: relative;
+            margin: 0 auto;
+            display: none;
+        }
+        
+        .timer-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary) 0%, transparent 0%);
+            transition: background 0.1s linear;
+        }
+        
+        .timer-inner {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: calc(100% - 10px);
+            height: calc(100% - 10px);
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .feedback-label {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin: 1rem 0;
+            color: var(--secondary);
+            display: none;
+        }
+        
+        .result-emoji {
+            font-size: 2rem;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 500px) {
+            .container {
+                width: 95%;
+                padding: 1.5rem;
+            }
+            
+            .answer-options {
+                gap: 1rem;
+            }
+            
+            .btn {
+                padding: 0.7rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .question {
+                font-size: 1.2rem;
+            }
+            
+            .result {
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Relationship Mediator</h1>
+        
+        <div id="start-screen">
+            <span class="emoji">💘</span>
+            <p>The fun way to end arguments and make up! Answer these questions honestly and let the mediator work its magic.</p>
+            <p>For each question, choose the answer that's best for your relationship!</p>
+            <button class="btn btn-start" id="start-btn">Start Mediating</button>
+        </div>
+        
+        <div id="question-screen" class="hidden">
+            <div class="progress-container">
+                <div class="progress-bar" id="progress-bar"></div>
+            </div>
+            
+            <div class="question-container">
+                <div class="question active" id="current-question">Loading question...</div>
+            </div>
+            
+            <div class="timer-container" id="timer-container">
+                <div class="timer-progress" id="timer-progress"></div>
+                <div class="timer-inner" id="timer-inner">10</div>
+            </div>
+            
+            <p class="feedback-label" id="feedback-label">Think about what's best for both of you...</p>
+            
+            <div class="answer-options">
+                <button class="btn btn-yes" id="yes-btn">Yes</button>
+                <button class="btn btn-no" id="no-btn">No</button>
+            </div>
+            
+            <div class="result" id="result-display"></div>
+            
+            <div class="reaction" id="reaction">🥰</div>
+        </div>
+        
+        <div id="final-screen" class="hidden">
+            <span class="emoji">❤️</span>
+            <h2>Congratulations!</h2>
+            <p>You've successfully completed the relationship mediation!</p>
+            <p>Remember, communication and a bit of humor can solve almost any disagreement.</p>
+            <p>Now go give me a hug!</p>
+            <button class="btn btn-start" id="restart-btn">Start Over</button>
+        </div>
+
+        <button class="show-guide-btn" id="show-guide-btn">How to host this on Azure for free</button>
+        <div class="hosting-guide" id="hosting-guide">
+            <h3>How to Host on Azure Static Web Apps (Free Tier)</h3>
+            <ol>
+                <li>Save this HTML file as <code>index.html</code> on your computer</li>
+                <li>Create a free GitHub account if you don't have one</li>
+                <li>Create a new repository and upload the index.html file</li>
+                <li>Log in to the Azure Portal (create a free account if needed)</li>
+                <li>Search for "Static Web Apps" and click "Create"</li>
+                <li>Connect your GitHub account and select your repository</li>
+                <li>Choose "Free" plan (no credit card required)</li>
+                <li>Complete the setup and Azure will automatically deploy your site</li>
+                <li>Your site will be available at a URL like: https://yourappname.azurestaticapps.net</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+       const questions = [
+    "Do you believe that understanding each other's feelings is more important than being right?",
+    "Would you say that our relationship is worth working through difficult moments together?",
+    "Do you think taking a step back and listening to each other can strengthen our bond?",
+    "Is it more important to you to resolve this disagreement peacefully than to win the argument?",
+    "Do you feel that we can learn and grow stronger from this disagreement?",
+    "Do you think that showing empathy toward each other will help us get through this?",
+    "Would you be willing to apologize if it meant healing the situation between us?",
+    "Do you think we can find common ground if we both try to understand each other’s perspective?",
+    "Would you agree that our relationship is more important than the issue we’re arguing about?",
+    "Do you believe that our love can overcome this disagreement and make us closer?"
+];
+
+
+        const positiveResponses = [
+            "<span class='result-emoji'>✨</span> That's a wonderful first step! Recognizing the importance of resolution shows how much you value each other.",
+            "<span class='result-emoji'>💞</span> Choosing happiness together over being right is the foundation of a loving relationship!",
+            "<span class='result-emoji'>💫</span> Beautiful! Remembering why you love each other helps put disagreements in perspective.",
+            "<span class='result-emoji'>🌟</span> Quality time is one of the best ways to reconnect and heal! Make it special for both of you.",
+            "<span class='result-emoji'>🧠</span> Empathy is a superpower in relationships! Seeing things from your partner's perspective opens doors to understanding.",
+            "<span class='result-emoji'>🗓️</span> Exactly! Most disagreements seem small when we look at the big picture of our relationship.",
+            "<span class='result-emoji'>🤝</span> Compromise shows maturity and love! Finding middle ground makes both of you winners.",
+            "<span class='result-emoji'>💌</span> A heartfelt apology can be incredibly healing. It's not about who's wrong, but about reconnecting.",
+            "<span class='result-emoji'>☮️</span> Choosing peace over winning shows how much you value your happiness together!",
+            "<span class='result-emoji'>❤️</span> Yes! Prioritizing your relationship over temporary disagreements is the secret to lasting love."
+        ];
+
+        const negativeOverrides = [
+            "<span class='result-emoji'>💭</span> I think deep down you meant 'Yes'! Resolving this will strengthen your connection and bring you closer.",
+            "<span class='result-emoji'>🎯</span> I'll change that to 'Yes' because happiness together always feels better than winning an argument!",
+            "<span class='result-emoji'>💝</span> Let's go with 'Yes' instead! There are definitely things you love about each other that outweigh this disagreement.",
+            "<span class='result-emoji'>🌈</span> I'm upgrading that to a 'Yes'! Quality time together has magical healing powers for relationships.",
+            "<span class='result-emoji'>👁️</span> I heard a 'Yes'! Seeing things from each other's perspective is the fastest way to resolve misunderstandings.",
+            "<span class='result-emoji'>⏳</span> I'm changing that to 'Yes' because most arguments fade quickly when we focus on our long-term happiness together.",
+            "<span class='result-emoji'>🌱</span> I think you meant to click 'Yes'! Compromise helps relationships grow stronger and more resilient.",
+            "<span class='result-emoji'>🙏</span> I'll make that a 'Yes' because sincere apologies heal wounds and bring people closer together.",
+            "<span class='result-emoji'>🕊️</span> Let's change that to 'Yes'! Peace in your relationship creates space for love to flourish.",
+            "<span class='result-emoji'>💯</span> I know you meant 'Yes'! Your relationship is absolutely more valuable than any temporary disagreement."
+        ];
+
+        const reactionEmojis = ["😍", "🥰", "💕", "💖", "💗", "💓", "❤️", "💘", "😘"];
+
+        // DOM elements
+        const startScreen = document.getElementById('start-screen');
+        const questionScreen = document.getElementById('question-screen');
+        const finalScreen = document.getElementById('final-screen');
+        const currentQuestion = document.getElementById('current-question');
+        const resultDisplay = document.getElementById('result-display');
+        const progressBar = document.getElementById('progress-bar');
+        const reaction = document.getElementById('reaction');
+        const timerContainer = document.getElementById('timer-container');
+        const timerProgress = document.getElementById('timer-progress');
+        const timerInner = document.getElementById('timer-inner');
+        const feedbackLabel = document.getElementById('feedback-label');
+        const hostingGuide = document.getElementById('hosting-guide');
+        
+        // Buttons
+        const startBtn = document.getElementById('start-btn');
+        const yesBtn = document.getElementById('yes-btn');
+        const noBtn = document.getElementById('no-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const showGuideBtn = document.getElementById('show-guide-btn');
+        
+        let currentQuestionIndex = 0;
+        let override = false;
+        let timerInterval;
+        let timeLeft = 10;
+        let sparkleInterval;
+
+        // Create confetti explosion
+        function createConfetti() {
+            const container = document.querySelector('.container');
+            for (let i = 0; i < 80; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = Math.random() * 20 + '%';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.animationDelay = Math.random() * 3 + 's';
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                container.appendChild(confetti);
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+        
+        // Create falling hearts
+        function createHearts() {
+            const container = document.querySelector('.container');
+            const hearts = document.createElement('div');
+            hearts.className = 'hearts';
+            container.appendChild(hearts);
+            
+            for (let i = 0; i < 15; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = '❤️';
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDelay = Math.random() * 2 + 's';
+                hearts.appendChild(heart);
+            }
+            
+            // Remove after animation completes
+            setTimeout(() => {
+                hearts.remove();
+            }, 3000);
+        }
+        
+        // Show reaction emoji
+        function showReaction() {
+            // Pick a random emoji
+            reaction.textContent = reactionEmojis[Math.floor(Math.random() * reactionEmojis.length)];
+            reaction.classList.add('show');
+            
+            setTimeout(() => {
+                reaction.classList.remove('show');
+            }, 1500);
+        }
+        
+        // Create sparkle effect around buttons
+        function createSparkles(button) {
+            clearInterval(sparkleInterval);
+            
+            sparkleInterval = setInterval(() => {
+                const rect = button.getBoundingClientRect();
+                const containerRect = document.querySelector('.container').getBoundingClientRect();
+                
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle';
+                
+                // Position relative to container
+                const top = rect.top - containerRect.top + Math.random() * rect.height;
+                const left = rect.left - containerRect.left + Math.random() * rect.width;
+                
+                sparkle.style.top = top + 'px';
+                sparkle.style.left = left + 'px';
+                sparkle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 80%)`;
+                sparkle.style.animation = `sparkle ${0.5 + Math.random() * 0.5}s ease-out`;
+                
+                document.querySelector('.container').appendChild(sparkle);
+                
+                // Remove after animation
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 1000);
+            }, 100);
+            
+            setTimeout(() => {
+                clearInterval(sparkleInterval);
+            }, 2000);
+        }
+        
+        // Make the button bounce
+        function bounceElement(element) {
+            element.classList.add('bounce');
+            setTimeout(() => {
+                element.classList.remove('bounce');
+            }, 1000);
+        }
+        
+        // Make the element shake
+        function shakeElement(element) {
+            element.classList.add('shake');
+            setTimeout(() => {
+                element.classList.remove('shake');
+            }, 500);
+        }
+        
+        // Make the No button move around when hovered
+        noBtn.addEventListener('mouseover', function() {
+            // 50% chance the button will move
+            if (Math.random() < 0.5) {
+                this.classList.add('moving-button');
+                setTimeout(() => {
+                    this.classList.remove('moving-button');
+                }, 1500);
+            }
+        });
+        
+        // Update progress bar
+        function updateProgressBar() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            progressBar.style.width = progress + '%';
+        }
+        
+        // Start the timer
+        function startTimer() {
+            timeLeft = 20;
+            timerInner.textContent = timeLeft;
+            timerProgress.style.background = `conic-gradient(var(--primary) 0%, transparent 0%)`;
+            
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerInner.textContent = timeLeft;
+                
+                // Update the timer visual
+                const progress = ((10 - timeLeft) / 10) * 100;
+                timerProgress.style.background = `conic-gradient(var(--primary) ${progress}%, transparent ${progress}%)`;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    // Auto click "Yes" when timer ends
+                    yesBtn.click();
+                }
+            }, 1000);
+        }
+        
+        // Show "thinking" feedback
+        function showFeedback() {
+            feedbackLabel.style.display = 'block';
+            feedbackLabel.textContent = "Think about what's best for both of you...";
+            
+            setTimeout(() => {
+                feedbackLabel.textContent = "Remember, healthy relationships require honest communication...";
+            }, 3000);
+            
+            setTimeout(() => {
+                feedbackLabel.textContent = "Choose the answer that will bring you closer together...";
+            }, 6000);
+        }
+        
+        // Start the mediation
+        startBtn.addEventListener('click', function() {
+            startScreen.classList.add('hidden');
+            questionScreen.classList.remove('hidden');
+            displayQuestion();
+            bounceElement(currentQuestion);
+            updateProgressBar();
+            
+            // Start the timer
+            timerContainer.style.display = 'block';
+            startTimer();
+            
+            // Show feedback messages
+            showFeedback();
+            
+            // Highlight Yes button occasionally
+            createSparkles(yesBtn);
+        });
+        
+        // Handle Yes button
+        yesBtn.addEventListener('click', function() {
+            clearInterval(timerInterval);
+            handleAnswer(true);
+        });
+        
+        // Handle No button
+        noBtn.addEventListener('click', function() {
+            clearInterval(timerInterval);
+            // 60% chance to override a "No" answer
+            override = Math.random() < 0.6;
+            handleAnswer(false);
+        });
+        
+        // Restart the mediation
+        restartBtn.addEventListener('click', function() {
+            currentQuestionIndex = 0;
+            finalScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        });
+        
+        // Show/hide hosting guide
+        showGuideBtn.addEventListener('click', function() {
+            if (hostingGuide.style.display === 'block') {
+                hostingGuide.style.display = 'none';
+                showGuideBtn.textContent = 'How to host this on Azure for free';
+            } else {
+                hostingGuide.style.display = 'block';
+                showGuideBtn.textContent = 'Hide hosting guide';
+            }
+        });
+        
+        // Display the current question
+        function displayQuestion() {
+            currentQuestion.textContent = questions[currentQuestionIndex];
+            currentQuestion.classList.add('active');
+        }
+        
+        // Handle the answer
+        function handleAnswer(isYes) {
+            let responseText = '';
+            timerContainer.style.display = 'none';
+            feedbackLabel.style.display = 'none';
+            
+            if (isYes) {
+                responseText = positiveResponses[currentQuestionIndex];
+                resultDisplay.className = 'result positive';
+                createHearts();
+                showReaction();
+            } else {
+                if (override) {
+                    responseText = negativeOverrides[currentQuestionIndex];
+                    resultDisplay.className = 'result override';
+                    // Small delay before showing hearts for the override effect
+                    setTimeout(createHearts, 500);
+                    setTimeout(showReaction, 800);
+                } else {
+                    shakeElement(noBtn);
+                    // Give another chance with a strongly worded message
+                    responseText = "<span class='result-emoji'>⚠️</span> Are you sure? Think about what's best for your relationship. Try again with your heart open.";
+                    resultDisplay.className = 'result';
+                    
+                    // Restart the timer for a second chance
+                    setTimeout(() => {
+                        if (currentQuestionIndex < questions.length) {
+                            timerContainer.style.display = 'block';
+                            startTimer();
+                            createSparkles(yesBtn);
+                        }
+                    }, 2000);
+                }
+            }
+            
+            resultDisplay.innerHTML = responseText;
+            resultDisplay.style.display = 'block';
+            
+            // If we're not giving a second chance
+            if (isYes || override) {
+                // Auto advance to next question after delay
+                setTimeout(() => {
+                    advanceToNextQuestion();
+                }, 4000);
+            }
+        }
+        
+      
+// Advance to next question
+function advanceToNextQuestion() {
+    currentQuestion.classList.add('fade-out');
+    resultDisplay.style.display = 'none';
+    
+    setTimeout(() => {
+        currentQuestionIndex++;
+        
+        if (currentQuestionIndex < questions.length) {
+            // Display next question
+            currentQuestion.classList.remove('active', 'fade-out');
+            void currentQuestion.offsetWidth; // Force reflow to reset animations
+            displayQuestion();
+            bounceElement(currentQuestion);
+            updateProgressBar();
+            
+            // Start the timer for the next question
+            timerContainer.style.display = 'block';
+            startTimer();
+            
+            // Show feedback again
+            showFeedback();
+            
+            // Highlight Yes button occasionally
+            createSparkles(yesBtn);
+        } else {
+            // End of questions, show final screen
+            questionScreen.classList.add('hidden');
+            finalScreen.classList.remove('hidden');
+            createConfetti();
+        }
+    }, 800);
+}
+    </script>
+</body>
+</html>
